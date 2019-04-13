@@ -1,0 +1,26 @@
+ {
+	"CodeBuildNewsletterSubscription": {
+		"Type": "AWS::CodeBuild::Project",
+		"Properties": {
+			"Name": "sabina_gatti_pl_newsletter_subscription",
+			"ServiceRole": { "Fn::GetAtt": ["CodeBuildNewsletterSubscriptionRole", "Arn"] },
+			"TimeoutInMinutes": 60,
+			"Source": {
+				"Type": "CODEPIPELINE",
+				"BuildSpec": "buildspec.yml"
+			},
+			"Artifacts": {
+				"Type": "CODEPIPELINE"
+			},
+			"Environment": {
+				"Type": "LINUX_CONTAINER",
+				"ComputeType": "BUILD_GENERAL1_SMALL",
+				"Image": "aws/codebuild/nodejs:8.11.0",
+				"EnvironmentVariables": [
+					{ "Name": "FUNCTION_NAME", "Type": "PLAINTEXT", "Value": { "Ref": "LambdaNewsletterSubscription" } },
+					{ "Name": "NEWSLETTER_ENDPOINT", "Type": "PLAINTEXT", "Value": { "Ref": "APIWebhookNewsletterSubscriptionAccount" } }
+				]
+			}
+		}
+	}
+}

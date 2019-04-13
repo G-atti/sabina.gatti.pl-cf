@@ -1,0 +1,8 @@
+{
+	"APIWebhookNewsletterSubscriptionAccount": {
+		"Type": "AWS::ApiGateway::Account",
+		"Properties": {
+			"CloudWatchRoleArn": { "Fn::GetAtt": ["APIWebhookNewsletterSubscriptionRole", "Arn"] }
+		}
+	}
+}

@@ -1,0 +1,20 @@
+{
+	"CodeBuildNewsletterSubscriptionRole": {
+		"Type": "AWS::IAM::Role",
+		"Properties": {
+			"RoleName": "sabina_gatti_pl_newsletter_subscription_code_build",
+			"AssumeRolePolicyDocument": {
+				"Version": "2012-10-17",
+				"Statement": [
+					{
+						"Effect": "Allow",
+						"Principal": {
+							"Service": "codebuild.amazonaws.com"
+						},
+						"Action": "sts:AssumeRole"
+					}
+				]
+			}
+		}
+	}
+}

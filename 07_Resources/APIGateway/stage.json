@@ -1,0 +1,11 @@
+{
+	"WebhookNewsletterSubscriptionStage": {
+		"Type": "AWS::ApiGateway::Stage",
+		"Properties": {
+			"StageName": "production",
+			"Description": "Code for the public",
+			"DeploymentId": { "Ref": "WebhookNewsletterSubscriptionDeployment" },
+			"RestApiId": { "Ref": "APIWebhookNewsletterSubscription" }
+		}
+	}
+}
