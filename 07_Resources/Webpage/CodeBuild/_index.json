@@ -19,7 +19,7 @@
 				"EnvironmentVariables": [
 					{ "Name": "S3_BUCKET", "Type": "PLAINTEXT", "Value": { "Ref": "S3WebpageHome" } },
 					{ "Name": "AWS_REGION", "Type": "PLAINTEXT", "Value": { "Ref": "AWS::Region" } },
-					{ "Name": "NEWSLETTER_ENDPOINT", "Type": "PLAINTEXT", "Value": { "Ref": "APIWebhookNewsletterSubscriptionAccount" } }
+					{ "Name": "NEWSLETTER_ENDPOINT", "Type": "PLAINTEXT", "Value": { "Fn::Sub": "https://${APIWebhookNewsletterSubscription}.execute-api.${AWS::Region}.amazonaws.com/${WebhookNewsletterSubscriptionStage}" } }
 				]
 			}
 		}
