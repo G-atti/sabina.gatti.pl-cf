@@ -46,49 +46,6 @@
 				}
 			}
 		},
-		"APIWebhookNewsletterSubscriptionRole": {
-			"Type": "AWS::IAM::Role",
-			"Properties": {
-				"RoleName": "webhook_stripe_api_gateway",
-				"AssumeRolePolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Principal": {
-								"Service": "apigateway.amazonaws.com"
-							},
-							"Action": "sts:AssumeRole"
-						}
-					]
-				},
-				"ManagedPolicyArns": [
-					"arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
-				]
-			}
-		},
-		"WebhookNewsletterSubscriptionDeployment": {
-			"Type": "AWS::ApiGateway::Deployment",
-			"Properties": {
-				"Description": "Initial deployment",
-				"RestApiId": {
-					"Ref": "APIWebhookNewsletterSubscription"
-				}
-			}
-		},
-		"WebhookNewsletterSubscriptionStage": {
-			"Type": "AWS::ApiGateway::Stage",
-			"Properties": {
-				"StageName": "production",
-				"Description": "Code for the public",
-				"DeploymentId": {
-					"Ref": "WebhookNewsletterSubscriptionDeployment"
-				},
-				"RestApiId": {
-					"Ref": "APIWebhookNewsletterSubscription"
-				}
-			}
-		},
 		"APIWebhookNewsletterSubscription": {
 			"Type": "AWS::ApiGateway::RestApi",
 			"Properties": {
@@ -211,6 +168,49 @@
 				}
 			}
 		},
+		"WebhookNewsletterSubscriptionDeployment": {
+			"Type": "AWS::ApiGateway::Deployment",
+			"Properties": {
+				"Description": "Initial deployment",
+				"RestApiId": {
+					"Ref": "APIWebhookNewsletterSubscription"
+				}
+			}
+		},
+		"APIWebhookNewsletterSubscriptionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"RoleName": "webhook_stripe_api_gateway",
+				"AssumeRolePolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Principal": {
+								"Service": "apigateway.amazonaws.com"
+							},
+							"Action": "sts:AssumeRole"
+						}
+					]
+				},
+				"ManagedPolicyArns": [
+					"arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+				]
+			}
+		},
+		"WebhookNewsletterSubscriptionStage": {
+			"Type": "AWS::ApiGateway::Stage",
+			"Properties": {
+				"StageName": "production",
+				"Description": "Code for the public",
+				"DeploymentId": {
+					"Ref": "WebhookNewsletterSubscriptionDeployment"
+				},
+				"RestApiId": {
+					"Ref": "APIWebhookNewsletterSubscription"
+				}
+			}
+		},
 		"APIWebhookNewsletterSubscriptionPolicyInvoke": {
 			"Type": "AWS::IAM::Policy",
 			"Properties": {
@@ -262,6 +262,22 @@
 							"Ref": "MailchimpListID"
 						}
 					}
+				}
+			}
+		},
+		"LambdaNewsletterSubscriptionPermission": {
+			"Type": "AWS::Lambda::Permission",
+			"Properties": {
+				"Action": "lambda:InvokeFunction",
+				"FunctionName": {
+					"Fn::GetAtt": [
+						"LambdaNewsletterSubscription",
+						"Arn"
+					]
+				},
+				"Principal": "apigateway.amazonaws.com",
+				"SourceArn": {
+					"Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${APIWebhookNewsletterSubscription}/*/*/*"
 				}
 			}
 		},
@@ -864,7 +880,7 @@
 							"Name": "NEWSLETTER_ENDPOINT",
 							"Type": "PLAINTEXT",
 							"Value": {
-								"Ref": "APIWebhookNewsletterSubscriptionAccount"
+								"Fn::Sub": "https://${APIWebhookNewsletterSubscription}.execute-api.${AWS::Region}.amazonaws.com/${WebhookNewsletterSubscriptionStage}"
 							}
 						}
 					]
