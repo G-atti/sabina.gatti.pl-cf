@@ -22,7 +22,7 @@
 								"Version": "1"
 							},
 							"Configuration": {
-								"Owner": "davidgatti",
+								"Owner": "G-atti",
 								"Repo": "sabina.gatti.pl",
 								"Branch": { "Ref": "Stage" },
 								"PollForSourceChanges": true,

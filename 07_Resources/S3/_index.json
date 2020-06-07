@@ -15,8 +15,8 @@
 				]
 			},
 			"WebsiteConfiguration": {
-				"ErrorDocument": "error",
-				"IndexDocument": "home"
+				"ErrorDocument": "/404/",
+				"IndexDocument": "index.html"
 			}
 		}
 	}

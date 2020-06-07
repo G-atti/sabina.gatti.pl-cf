@@ -1,7 +1,0 @@
-{
-	"MailchimpAPIKey": {
-		"Description": "The API Key for MailChimp",
-		"NoEcho": true,
-		"Type": "String"
-	}
-}

@@ -3,7 +3,7 @@
 		"Type": "AWS::CloudFront::Distribution",
 		"Properties": {
 			"DistributionConfig": {
-				"Comment": "sabina.gatti.pl",
+				"Comment": { "Fn::Sub": "${DomainHomePage}" },
 				"DefaultCacheBehavior": {
 					"ForwardedValues": {
 						"Cookies": {
@@ -12,7 +12,7 @@
 						"QueryString": false
 					},
 					"MinTTL": 0,
-					"TargetOriginId": { "Fn::GetAtt": ["S3WebpageHome", "DomainName"] },
+					"TargetOriginId": { "Fn::Sub": "${S3WebpageHome}.s3-website-${AWS::Region}.amazonaws.com" },
 					"ViewerProtocolPolicy": "redirect-to-https",
 					"AllowedMethods": ["GET", "HEAD"],
 					"CachedMethods": ["GET", "HEAD"],
@@ -23,8 +23,8 @@
 				},
 				"Enabled": true,
 				"Origins": [{
-					"DomainName": { "Fn::GetAtt": ["S3WebpageHome", "DomainName"] },
-					"Id": { "Fn::GetAtt": ["S3WebpageHome", "DomainName"] },
+					"DomainName": { "Fn::Sub": "${S3WebpageHome}.s3-website-${AWS::Region}.amazonaws.com" },
+					"Id": { "Fn::Sub": "${S3WebpageHome}.s3-website-${AWS::Region}.amazonaws.com" },
 					"CustomOriginConfig": {
 						"HTTPPort": 80,
 						"HTTPSPort": 443,
@@ -32,7 +32,12 @@
 						"OriginSSLProtocols": ["TLSv1.1"]
 					}
 				}],
-				"DefaultRootObject": "home",
+				"Aliases": [ { "Fn::Sub": "${DomainHomePage}" } ],
+				"ViewerCertificate": {
+					"AcmCertificateArn" : { "Ref": "CertificateARNParam" },
+					"SslSupportMethod": "sni-only"
+				},
+				"DefaultRootObject": "index.html",
 				"HttpVersion": "http2",
 				"IPV6Enabled": true,
 				"PriceClass": "PriceClass_100",

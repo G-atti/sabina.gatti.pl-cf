@@ -2,7 +2,7 @@
 	"CodeBuildWebpageHome": {
 		"Type": "AWS::CodeBuild::Project",
 		"Properties": {
-			"Name": "sabina_gatti_pl_front_end",
+			"Name": "webpage_consulting",
 			"ServiceRole": { "Fn::GetAtt": ["CodeBuildWebpageHomeRole", "Arn"] },
 			"TimeoutInMinutes": 60,
 			"Source": {
@@ -15,11 +15,13 @@
 			"Environment": {
 				"Type": "LINUX_CONTAINER",
 				"ComputeType": "BUILD_GENERAL1_SMALL",
-				"Image": "aws/codebuild/nodejs:8.11.0",
+				"Image": "aws/codebuild/standard:3.0",
 				"EnvironmentVariables": [
-					{ "Name": "S3_BUCKET", "Type": "PLAINTEXT", "Value": { "Ref": "S3WebpageHome" } },
 					{ "Name": "AWS_REGION", "Type": "PLAINTEXT", "Value": { "Ref": "AWS::Region" } },
-					{ "Name": "NEWSLETTER_ENDPOINT", "Type": "PLAINTEXT", "Value": { "Fn::Sub": "https://${APIWebhookNewsletterSubscription}.execute-api.${AWS::Region}.amazonaws.com/${WebhookNewsletterSubscriptionStage}" } }
+					{ "Name": "IDENTITY_POOL_ID", "Type": "PLAINTEXT", "Value": { "Ref": "CognitoIdentityPool" } },
+					{ "Name": "S3_BUCKET_EMAIL", "Type": "PLAINTEXT", "Value": { "Ref": "S3BucketEmail" } },	
+					{ "Name": "S3_BUCKET_SITE", "Type": "PLAINTEXT", "Value": { "Ref": "S3WebpageHome" } },
+					{ "Name": "DISTRIBUTION_ID", "Type": "PLAINTEXT", "Value": { "Ref": "CloudFrontHome" } }
 				]
 			}
 		}

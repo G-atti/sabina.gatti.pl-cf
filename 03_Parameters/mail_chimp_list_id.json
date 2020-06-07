@@ -1,6 +1,0 @@
-{
-	"MailchimpListID": {
-		"Description": "The Mailchimp List ID where to save the emails",
-		"Type": "String"
-	}
-}

@@ -1,0 +1,6 @@
+{
+	"S3BucketEmail": {
+		"Description": "This bucket is where we are goign to save the data from the contact page, to then be sent as an email.",
+		"Type": "String"
+	}
+}

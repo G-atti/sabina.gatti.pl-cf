@@ -15,13 +15,12 @@
 			"NoEcho": true,
 			"Type": "String"
 		},
-		"MailchimpAPIKey": {
-			"Description": "The API Key for MailChimp",
-			"NoEcho": true,
+		"S3BucketEmail": {
+			"Description": "This bucket is where we are goign to save the data from the contact page, to then be sent as an email.",
 			"Type": "String"
 		},
-		"MailchimpListID": {
-			"Description": "The Mailchimp List ID where to save the emails",
+		"CertificateARNParam": {
+			"Description": "The ARN of a SSL Certificate.",
 			"Type": "String"
 		},
 		"Stage": {
@@ -35,551 +34,13 @@
 		}
 	},
 	"Resources": {
-		"APIWebhookNewsletterSubscriptionAccount": {
-			"Type": "AWS::ApiGateway::Account",
-			"Properties": {
-				"CloudWatchRoleArn": {
-					"Fn::GetAtt": [
-						"APIWebhookNewsletterSubscriptionRole",
-						"Arn"
-					]
-				}
-			}
-		},
-		"APIWebhookNewsletterSubscription": {
-			"Type": "AWS::ApiGateway::RestApi",
-			"Properties": {
-				"Description": "Webhook to catch emails for the Newsletter.",
-				"Name": "Webhook-NewsletterSubscription",
-				"Body": {
-					"swagger": "2.0",
-					"info": {
-						"version": "2017-12-25T08:30:13Z",
-						"title": "sabina.gatti.pl"
-					},
-					"schemes": [
-						"https"
-					],
-					"paths": {
-						"/subscribe": {
-							"post": {
-								"produces": [
-									"application/json"
-								],
-								"responses": {
-									"200": {
-										"description": "200 response",
-										"schema": {
-											"$ref": "#/definitions/Empty"
-										}
-									}
-								},
-								"x-amazon-apigateway-integration": {
-									"uri": {
-										"Fn::Join": [
-											"",
-											[
-												"arn",
-												":",
-												"aws",
-												":",
-												"apigateway",
-												":",
-												{
-													"Ref": "AWS::Region"
-												},
-												":",
-												"lambda",
-												":",
-												"path/2015-03-31/functions/",
-												{
-													"Fn::GetAtt": [
-														"LambdaNewsletterSubscription",
-														"Arn"
-													]
-												},
-												"/invocations"
-											]
-										]
-									},
-									"responses": {
-										"default": {
-											"statusCode": "200"
-										}
-									},
-									"passthroughBehavior": "when_no_match",
-									"httpMethod": "POST",
-									"contentHandling": "CONVERT_TO_TEXT",
-									"type": "aws_proxy"
-								}
-							},
-							"options": {
-								"consumes": [
-									"application/json"
-								],
-								"produces": [
-									"application/json"
-								],
-								"responses": {
-									"200": {
-										"description": "200 response",
-										"schema": {
-											"$ref": "#/definitions/Empty"
-										},
-										"headers": {
-											"Access-Control-Allow-Origin": {
-												"type": "string"
-											},
-											"Access-Control-Allow-Methods": {
-												"type": "string"
-											},
-											"Access-Control-Allow-Headers": {
-												"type": "string"
-											}
-										}
-									}
-								},
-								"x-amazon-apigateway-integration": {
-									"responses": {
-										"default": {
-											"statusCode": "200",
-											"responseParameters": {
-												"method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-												"method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
-												"method.response.header.Access-Control-Allow-Origin": "'*'"
-											}
-										}
-									},
-									"passthroughBehavior": "when_no_match",
-									"requestTemplates": {
-										"application/json": "{\"statusCode\": 200}"
-									},
-									"type": "mock"
-								}
-							}
-						}
-					},
-					"definitions": {
-						"Empty": {
-							"type": "object",
-							"title": "Empty Schema"
-						}
-					}
-				}
-			}
-		},
-		"WebhookNewsletterSubscriptionDeployment": {
-			"Type": "AWS::ApiGateway::Deployment",
-			"Properties": {
-				"Description": "Initial deployment",
-				"RestApiId": {
-					"Ref": "APIWebhookNewsletterSubscription"
-				}
-			}
-		},
-		"APIWebhookNewsletterSubscriptionRole": {
-			"Type": "AWS::IAM::Role",
-			"Properties": {
-				"RoleName": "webhook_stripe_api_gateway",
-				"AssumeRolePolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Principal": {
-								"Service": "apigateway.amazonaws.com"
-							},
-							"Action": "sts:AssumeRole"
-						}
-					]
-				},
-				"ManagedPolicyArns": [
-					"arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
-				]
-			}
-		},
-		"WebhookNewsletterSubscriptionStage": {
-			"Type": "AWS::ApiGateway::Stage",
-			"Properties": {
-				"StageName": "production",
-				"Description": "Code for the public",
-				"DeploymentId": {
-					"Ref": "WebhookNewsletterSubscriptionDeployment"
-				},
-				"RestApiId": {
-					"Ref": "APIWebhookNewsletterSubscription"
-				}
-			}
-		},
-		"APIWebhookNewsletterSubscriptionPolicyInvoke": {
-			"Type": "AWS::IAM::Policy",
-			"Properties": {
-				"PolicyName": "invoke",
-				"Roles": [
-					{
-						"Ref": "APIWebhookNewsletterSubscriptionRole"
-					}
-				],
-				"PolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Action": "lambda:InvokeFunction",
-							"Resource": [
-								{
-									"Fn::Sub": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaNewsletterSubscription}"
-								}
-							]
-						}
-					]
-				}
-			}
-		},
-		"LambdaNewsletterSubscription": {
-			"Type": "AWS::Lambda::Function",
-			"Properties": {
-				"FunctionName": "sabina_gatti_pl_newsletter_subscribe",
-				"Code": {
-					"ZipFile": "exports.handler = async (event) => {return true;};"
-				},
-				"Handler": "index.handler",
-				"MemorySize": 128,
-				"Role": {
-					"Fn::GetAtt": [
-						"LambdaNewsletterSubscriptionRole",
-						"Arn"
-					]
-				},
-				"Runtime": "nodejs8.10",
-				"Timeout": 60,
-				"Environment": {
-					"Variables": {
-						"MAILCHIMP_API_KEY": {
-							"Ref": "MailchimpAPIKey"
-						},
-						"MAILCHIMP_LIST_ID": {
-							"Ref": "MailchimpListID"
-						}
-					}
-				}
-			}
-		},
-		"LambdaNewsletterSubscriptionPermission": {
-			"Type": "AWS::Lambda::Permission",
-			"Properties": {
-				"Action": "lambda:InvokeFunction",
-				"FunctionName": {
-					"Fn::GetAtt": [
-						"LambdaNewsletterSubscription",
-						"Arn"
-					]
-				},
-				"Principal": "apigateway.amazonaws.com",
-				"SourceArn": {
-					"Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${APIWebhookNewsletterSubscription}/*/*/*"
-				}
-			}
-		},
-		"LambdaNewsletterSubscriptionRole": {
-			"Type": "AWS::IAM::Role",
-			"Properties": {
-				"RoleName": "Lambda-Financial-Calculation",
-				"AssumeRolePolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Principal": {
-								"Service": "lambda.amazonaws.com"
-							},
-							"Action": "sts:AssumeRole"
-						}
-					]
-				},
-				"ManagedPolicyArns": [
-					"arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-				]
-			}
-		},
-		"CodeBuildNewsletterSubscription": {
-			"Type": "AWS::CodeBuild::Project",
-			"Properties": {
-				"Name": "sabina_gatti_pl_newsletter_subscription",
-				"ServiceRole": {
-					"Fn::GetAtt": [
-						"CodeBuildNewsletterSubscriptionRole",
-						"Arn"
-					]
-				},
-				"TimeoutInMinutes": 60,
-				"Source": {
-					"Type": "CODEPIPELINE",
-					"BuildSpec": "buildspec.yml"
-				},
-				"Artifacts": {
-					"Type": "CODEPIPELINE"
-				},
-				"Environment": {
-					"Type": "LINUX_CONTAINER",
-					"ComputeType": "BUILD_GENERAL1_SMALL",
-					"Image": "aws/codebuild/nodejs:8.11.0",
-					"EnvironmentVariables": [
-						{
-							"Name": "FUNCTION_NAME",
-							"Type": "PLAINTEXT",
-							"Value": {
-								"Ref": "LambdaNewsletterSubscription"
-							}
-						}
-					]
-				}
-			}
-		},
-		"CodeBuildNewsletterSubscriptionRole": {
-			"Type": "AWS::IAM::Role",
-			"Properties": {
-				"RoleName": "sabina_gatti_pl_newsletter_subscription_code_build",
-				"AssumeRolePolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Principal": {
-								"Service": "codebuild.amazonaws.com"
-							},
-							"Action": "sts:AssumeRole"
-						}
-					]
-				}
-			}
-		},
-		"CodeBuildNewsletterSubscriptionPolicyCWL": {
-			"Type": "AWS::IAM::Policy",
-			"Properties": {
-				"Roles": [
-					{
-						"Ref": "CodeBuildNewsletterSubscriptionRole"
-					}
-				],
-				"PolicyName": "cloud_watch_log_access",
-				"PolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Action": [
-								"logs:CreateLogGroup",
-								"logs:CreateLogStream",
-								"logs:PutLogEvents"
-							],
-							"Resource": [
-								{
-									"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/sabina_gatti_pl_newsletter_subscription"
-								},
-								{
-									"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/sabina_gatti_pl_newsletter_subscription:*"
-								}
-							]
-						}
-					]
-				}
-			}
-		},
-		"CodeBuildNewsletterSubscriptionPolicyLambdaUpdate": {
-			"Type": "AWS::IAM::Policy",
-			"Properties": {
-				"Roles": [
-					{
-						"Ref": "CodeBuildNewsletterSubscriptionRole"
-					}
-				],
-				"PolicyName": "lambda_update_function_code",
-				"PolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Action": "lambda:UpdateFunctionCode",
-							"Resource": {
-								"Fn::Sub": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaNewsletterSubscription}"
-							}
-						}
-					]
-				}
-			}
-		},
-		"CodeBuildNewsletterSubscriptionPolicyS3": {
-			"Type": "AWS::IAM::Policy",
-			"Properties": {
-				"Roles": [
-					{
-						"Ref": "CodeBuildNewsletterSubscriptionRole"
-					}
-				],
-				"PolicyName": "s3_artifact_access",
-				"PolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Action": "s3:GetObject",
-							"Resource": {
-								"Fn::Sub": "arn:aws:s3:::${CodePipelineArtifacts}/*"
-							}
-						}
-					]
-				}
-			}
-		},
-		"CodePipelineNewsletterSubscription": {
-			"Type": "AWS::CodePipeline::Pipeline",
-			"Properties": {
-				"Name": "sabina_gatti_pl_newsletter_subscription",
-				"ArtifactStore": {
-					"Location": {
-						"Ref": "CodePipelineArtifacts"
-					},
-					"Type": "S3"
-				},
-				"RoleArn": {
-					"Fn::GetAtt": [
-						"CodePipelineNewsletterSubscriptionRole",
-						"Arn"
-					]
-				},
-				"Stages": [
-					{
-						"Name": "Get",
-						"Actions": [
-							{
-								"Name": "Material",
-								"RunOrder": 1,
-								"ActionTypeId": {
-									"Category": "Source",
-									"Owner": "ThirdParty",
-									"Provider": "GitHub",
-									"Version": "1"
-								},
-								"Configuration": {
-									"Owner": "davidgatti",
-									"Repo": "sabina.gatti.pl-lambda-newsletter-subscribe",
-									"Branch": {
-										"Ref": "Stage"
-									},
-									"PollForSourceChanges": true,
-									"OAuthToken": {
-										"Ref": "GitHubToken"
-									}
-								},
-								"OutputArtifacts": [
-									{
-										"Name": "source_code"
-									}
-								]
-							}
-						]
-					},
-					{
-						"Name": "Cast",
-						"Actions": [
-							{
-								"Name": "Mold",
-								"RunOrder": 1,
-								"InputArtifacts": [
-									{
-										"Name": "source_code"
-									}
-								],
-								"Configuration": {
-									"ProjectName": {
-										"Ref": "CodeBuildNewsletterSubscription"
-									}
-								},
-								"ActionTypeId": {
-									"Category": "Build",
-									"Owner": "AWS",
-									"Provider": "CodeBuild",
-									"Version": "1"
-								}
-							}
-						]
-					}
-				]
-			}
-		},
-		"CodePipelineNewsletterSubscriptionRole": {
-			"Type": "AWS::IAM::Role",
-			"Properties": {
-				"RoleName": "sabina_gatti_pl_newsletter_subscription_code_pipeline",
-				"AssumeRolePolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Principal": {
-								"Service": "codepipeline.amazonaws.com"
-							},
-							"Action": "sts:AssumeRole"
-						}
-					]
-				}
-			}
-		},
-		"PipelinePlanNewsletterSubscriptionPolicyCB": {
-			"Type": "AWS::IAM::Policy",
-			"Properties": {
-				"PolicyName": "code_build",
-				"Roles": [
-					{
-						"Ref": "CodePipelineNewsletterSubscriptionRole"
-					}
-				],
-				"PolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Action": [
-								"codebuild:BatchGetBuilds",
-								"codebuild:StartBuild"
-							],
-							"Resource": {
-								"Fn::Sub": "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeBuildNewsletterSubscription}"
-							}
-						}
-					]
-				}
-			}
-		},
-		"PipelinePlanNewsletterSubscriptionPolicyS3": {
-			"Type": "AWS::IAM::Policy",
-			"Properties": {
-				"PolicyName": "s3",
-				"Roles": [
-					{
-						"Ref": "CodePipelineNewsletterSubscriptionRole"
-					}
-				],
-				"PolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Action": "s3:*",
-							"Resource": {
-								"Fn::Sub": "arn:aws:s3:::${CodePipelineArtifacts}/*"
-							}
-						}
-					]
-				}
-			}
-		},
 		"CloudFrontHome": {
 			"Type": "AWS::CloudFront::Distribution",
 			"Properties": {
 				"DistributionConfig": {
-					"Comment": "sabina.gatti.pl",
+					"Comment": {
+						"Fn::Sub": "${DomainHomePage}"
+					},
 					"DefaultCacheBehavior": {
 						"ForwardedValues": {
 							"Cookies": {
@@ -589,10 +50,7 @@
 						},
 						"MinTTL": 0,
 						"TargetOriginId": {
-							"Fn::GetAtt": [
-								"S3WebpageHome",
-								"DomainName"
-							]
+							"Fn::Sub": "${S3WebpageHome}.s3-website-${AWS::Region}.amazonaws.com"
 						},
 						"ViewerProtocolPolicy": "redirect-to-https",
 						"AllowedMethods": [
@@ -612,16 +70,10 @@
 					"Origins": [
 						{
 							"DomainName": {
-								"Fn::GetAtt": [
-									"S3WebpageHome",
-									"DomainName"
-								]
+								"Fn::Sub": "${S3WebpageHome}.s3-website-${AWS::Region}.amazonaws.com"
 							},
 							"Id": {
-								"Fn::GetAtt": [
-									"S3WebpageHome",
-									"DomainName"
-								]
+								"Fn::Sub": "${S3WebpageHome}.s3-website-${AWS::Region}.amazonaws.com"
 							},
 							"CustomOriginConfig": {
 								"HTTPPort": 80,
@@ -633,7 +85,18 @@
 							}
 						}
 					],
-					"DefaultRootObject": "home",
+					"Aliases": [
+						{
+							"Fn::Sub": "${DomainHomePage}"
+						}
+					],
+					"ViewerCertificate": {
+						"AcmCertificateArn": {
+							"Ref": "CertificateARNParam"
+						},
+						"SslSupportMethod": "sni-only"
+					},
+					"DefaultRootObject": "index.html",
 					"HttpVersion": "http2",
 					"IPV6Enabled": true,
 					"PriceClass": "PriceClass_100",
@@ -669,8 +132,8 @@
 					]
 				},
 				"WebsiteConfiguration": {
-					"ErrorDocument": "error",
-					"IndexDocument": "home"
+					"ErrorDocument": "/404/",
+					"IndexDocument": "index.html"
 				}
 			}
 		},
@@ -688,6 +151,210 @@
 							"Effect": "Allow",
 							"Principal": "*",
 							"Action": "s3:GetObject",
+							"Resource": {
+								"Fn::Sub": "arn:aws:s3:::${S3WebpageHome}/*"
+							}
+						}
+					]
+				}
+			}
+		},
+		"CodeBuildWebpageHome": {
+			"Type": "AWS::CodeBuild::Project",
+			"Properties": {
+				"Name": "webpage_consulting",
+				"ServiceRole": {
+					"Fn::GetAtt": [
+						"CodeBuildWebpageHomeRole",
+						"Arn"
+					]
+				},
+				"TimeoutInMinutes": 60,
+				"Source": {
+					"Type": "CODEPIPELINE",
+					"BuildSpec": "buildspec.yml"
+				},
+				"Artifacts": {
+					"Type": "CODEPIPELINE"
+				},
+				"Environment": {
+					"Type": "LINUX_CONTAINER",
+					"ComputeType": "BUILD_GENERAL1_SMALL",
+					"Image": "aws/codebuild/standard:3.0",
+					"EnvironmentVariables": [
+						{
+							"Name": "AWS_REGION",
+							"Type": "PLAINTEXT",
+							"Value": {
+								"Ref": "AWS::Region"
+							}
+						},
+						{
+							"Name": "IDENTITY_POOL_ID",
+							"Type": "PLAINTEXT",
+							"Value": {
+								"Ref": "CognitoIdentityPool"
+							}
+						},
+						{
+							"Name": "S3_BUCKET_EMAIL",
+							"Type": "PLAINTEXT",
+							"Value": {
+								"Ref": "S3BucketEmail"
+							}
+						},
+						{
+							"Name": "S3_BUCKET_SITE",
+							"Type": "PLAINTEXT",
+							"Value": {
+								"Ref": "S3WebpageHome"
+							}
+						},
+						{
+							"Name": "DISTRIBUTION_ID",
+							"Type": "PLAINTEXT",
+							"Value": {
+								"Ref": "CloudFrontHome"
+							}
+						}
+					]
+				}
+			}
+		},
+		"CodeBuildWebpageHomeRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"RoleName": "sabina_gatti_pl_front_end_codebuild_webpage",
+				"AssumeRolePolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Principal": {
+								"Service": "codebuild.amazonaws.com"
+							},
+							"Action": "sts:AssumeRole"
+						}
+					]
+				}
+			}
+		},
+		"CodeBuildWebpageHomePolicyCloudFrontCreateInvalidation": {
+			"Type": "AWS::IAM::Policy",
+			"Properties": {
+				"Roles": [
+					{
+						"Ref": "CodeBuildWebpageHomeRole"
+					}
+				],
+				"PolicyName": "cloud_front_invalidate",
+				"PolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": [
+								"cloudfront:CreateInvalidation"
+							],
+							"Resource": "*"
+						}
+					]
+				}
+			}
+		},
+		"CodeBuildWebpageHomePolicyCloudFrontList": {
+			"Type": "AWS::IAM::Policy",
+			"Properties": {
+				"Roles": [
+					{
+						"Ref": "CodeBuildWebpageHomeRole"
+					}
+				],
+				"PolicyName": "cloudfront_list",
+				"PolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": [
+								"cloudfront:ListDistributions"
+							],
+							"Resource": "*"
+						}
+					]
+				}
+			}
+		},
+		"CodeBuildWebpageHomePolicyCWL": {
+			"Type": "AWS::IAM::Policy",
+			"Properties": {
+				"Roles": [
+					{
+						"Ref": "CodeBuildWebpageHomeRole"
+					}
+				],
+				"PolicyName": "cloud_watch_log_access",
+				"PolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": [
+								"logs:CreateLogGroup",
+								"logs:CreateLogStream",
+								"logs:PutLogEvents"
+							],
+							"Resource": [
+								{
+									"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		"CodeBuildWebpageHomePolicyS3": {
+			"Type": "AWS::IAM::Policy",
+			"Properties": {
+				"Roles": [
+					{
+						"Ref": "CodeBuildWebpageHomeRole"
+					}
+				],
+				"PolicyName": "s3_artifact_access",
+				"PolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": "s3:*",
+							"Resource": {
+								"Fn::Sub": "arn:aws:s3:::${CodePipelineArtifacts}/*"
+							}
+						}
+					]
+				}
+			}
+		},
+		"CodeBuildWebpageHomePolicyS3Hosting": {
+			"Type": "AWS::IAM::Policy",
+			"Properties": {
+				"Roles": [
+					{
+						"Ref": "CodeBuildWebpageHomeRole"
+					}
+				],
+				"PolicyName": "s3_hosting",
+				"PolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": [
+								"s3:PutObject",
+								"s3:DeleteObject"
+							],
 							"Resource": {
 								"Fn::Sub": "arn:aws:s3:::${S3WebpageHome}/*"
 							}
@@ -726,7 +393,7 @@
 									"Version": "1"
 								},
 								"Configuration": {
-									"Owner": "davidgatti",
+									"Owner": "G-atti",
 									"Repo": "sabina.gatti.pl",
 									"Branch": {
 										"Ref": "Stage"
@@ -839,182 +506,22 @@
 				}
 			}
 		},
-		"CodeBuildWebpageHome": {
-			"Type": "AWS::CodeBuild::Project",
+		"CognitoIdentityPool": {
+			"Type": "AWS::Cognito::IdentityPool",
 			"Properties": {
-				"Name": "sabina_gatti_pl_front_end",
-				"ServiceRole": {
-					"Fn::GetAtt": [
-						"CodeBuildWebpageHomeRole",
-						"Arn"
-					]
-				},
-				"TimeoutInMinutes": 60,
-				"Source": {
-					"Type": "CODEPIPELINE",
-					"BuildSpec": "buildspec.yml"
-				},
-				"Artifacts": {
-					"Type": "CODEPIPELINE"
-				},
-				"Environment": {
-					"Type": "LINUX_CONTAINER",
-					"ComputeType": "BUILD_GENERAL1_SMALL",
-					"Image": "aws/codebuild/nodejs:8.11.0",
-					"EnvironmentVariables": [
-						{
-							"Name": "S3_BUCKET",
-							"Type": "PLAINTEXT",
-							"Value": {
-								"Ref": "S3WebpageHome"
-							}
-						},
-						{
-							"Name": "AWS_REGION",
-							"Type": "PLAINTEXT",
-							"Value": {
-								"Ref": "AWS::Region"
-							}
-						},
-						{
-							"Name": "NEWSLETTER_ENDPOINT",
-							"Type": "PLAINTEXT",
-							"Value": {
-								"Fn::Sub": "https://${APIWebhookNewsletterSubscription}.execute-api.${AWS::Region}.amazonaws.com/${WebhookNewsletterSubscriptionStage}"
-							}
-						}
-					]
-				}
+				"IdentityPoolName": "zer0x_consulting",
+				"AllowUnauthenticatedIdentities": true
 			}
 		},
-		"CodeBuildWebpageHomeRole": {
-			"Type": "AWS::IAM::Role",
-			"Properties": {
-				"RoleName": "sabina_gatti_pl_front_end_codebuild_webpage",
-				"AssumeRolePolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Principal": {
-								"Service": "codebuild.amazonaws.com"
-							},
-							"Action": "sts:AssumeRole"
-						}
-					]
-				}
-			}
-		},
-		"CodeBuildWebpageHomePolicyCloudFrontCreateInvalidation": {
+		"CognitoIdentityPoolPolicyS3": {
 			"Type": "AWS::IAM::Policy",
 			"Properties": {
+				"PolicyName": "s3",
 				"Roles": [
 					{
-						"Ref": "CodeBuildWebpageHomeRole"
+						"Ref": "CognitoIDPUnauthenticatedRole"
 					}
 				],
-				"PolicyName": "cloud_front_invalidate",
-				"PolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Action": [
-								"cloudfront:CreateInvalidation"
-							],
-							"Resource": "*"
-						}
-					]
-				}
-			}
-		},
-		"CodeBuildWebpageHomePolicyCloudFrontList": {
-			"Type": "AWS::IAM::Policy",
-			"Properties": {
-				"Roles": [
-					{
-						"Ref": "CodeBuildWebpageHomeRole"
-					}
-				],
-				"PolicyName": "cloudfront_list",
-				"PolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Action": [
-								"cloudfront:ListDistributions"
-							],
-							"Resource": "*"
-						}
-					]
-				}
-			}
-		},
-		"CodeBuildWebpageHomePolicyCWL": {
-			"Type": "AWS::IAM::Policy",
-			"Properties": {
-				"Roles": [
-					{
-						"Ref": "CodeBuildWebpageHomeRole"
-					}
-				],
-				"PolicyName": "cloud_watch_log_access",
-				"PolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Action": [
-								"logs:CreateLogGroup",
-								"logs:CreateLogStream",
-								"logs:PutLogEvents"
-							],
-							"Resource": [
-								{
-									"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/sabina_gatti_pl_front_end"
-								},
-								{
-									"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/sabina_gatti_pl_front_end:*"
-								}
-							]
-						}
-					]
-				}
-			}
-		},
-		"CodeBuildWebpageHomePolicyS3": {
-			"Type": "AWS::IAM::Policy",
-			"Properties": {
-				"Roles": [
-					{
-						"Ref": "CodeBuildWebpageHomeRole"
-					}
-				],
-				"PolicyName": "s3_artifact_access",
-				"PolicyDocument": {
-					"Version": "2012-10-17",
-					"Statement": [
-						{
-							"Effect": "Allow",
-							"Action": "s3:*",
-							"Resource": {
-								"Fn::Sub": "arn:aws:s3:::${CodePipelineArtifacts}/*"
-							}
-						}
-					]
-				}
-			}
-		},
-		"CodeBuildWebpageHomePolicyS3Hosting": {
-			"Type": "AWS::IAM::Policy",
-			"Properties": {
-				"Roles": [
-					{
-						"Ref": "CodeBuildWebpageHomeRole"
-					}
-				],
-				"PolicyName": "s3_hosting",
 				"PolicyDocument": {
 					"Version": "2012-10-17",
 					"Statement": [
@@ -1022,10 +529,88 @@
 							"Effect": "Allow",
 							"Action": "s3:PutObject",
 							"Resource": {
-								"Fn::Sub": "arn:aws:s3:::${S3WebpageHome}/*"
+								"Fn::Sub": "arn:aws:s3:::${S3BucketEmail}/*"
 							}
 						}
 					]
+				}
+			}
+		},
+		"CognitoIDPAuthenticatedRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"RoleName": "webpage_consulting_cognito_identitypool_authenticated",
+				"AssumeRolePolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Principal": {
+								"Federated": "cognito-identity.amazonaws.com"
+							},
+							"Action": "sts:AssumeRoleWithWebIdentity",
+							"Condition": {
+								"StringEquals": {
+									"cognito-identity.amazonaws.com:aud": {
+										"Ref": "CognitoIdentityPool"
+									}
+								},
+								"ForAnyValue:StringLike": {
+									"cognito-identity.amazonaws.com:amr": "authenticated"
+								}
+							}
+						}
+					]
+				}
+			}
+		},
+		"CognitoIDPUnauthenticatedRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"RoleName": "webpage_consulting_cognito_identitypool_unauthenticated",
+				"AssumeRolePolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Principal": {
+								"Federated": "cognito-identity.amazonaws.com"
+							},
+							"Action": "sts:AssumeRoleWithWebIdentity",
+							"Condition": {
+								"StringEquals": {
+									"cognito-identity.amazonaws.com:aud": {
+										"Ref": "CognitoIdentityPool"
+									}
+								},
+								"ForAnyValue:StringLike": {
+									"cognito-identity.amazonaws.com:amr": "unauthenticated"
+								}
+							}
+						}
+					]
+				}
+			}
+		},
+		"CognitoIdentityPoolRoleAttachment": {
+			"Type": "AWS::Cognito::IdentityPoolRoleAttachment",
+			"Properties": {
+				"IdentityPoolId": {
+					"Ref": "CognitoIdentityPool"
+				},
+				"Roles": {
+					"authenticated": {
+						"Fn::GetAtt": [
+							"CognitoIDPAuthenticatedRole",
+							"Arn"
+						]
+					},
+					"unauthenticated": {
+						"Fn::GetAtt": [
+							"CognitoIDPUnauthenticatedRole",
+							"Arn"
+						]
+					}
 				}
 			}
 		}
